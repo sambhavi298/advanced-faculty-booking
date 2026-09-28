@@ -269,10 +269,11 @@ placeholders (`$1`, `$2`, …), which rules out SQL injection by construction.
 | HTTP              | Jest + Supertest + real PostgreSQL | Full request → response through every middleware, including auth                      |
 | Concurrency       | Jest + parallel connections        | Simultaneous bookings for one slot: exactly one succeeds                              |
 | Frontend          | Vitest + Testing Library           | Pages render real API states (loading, empty, error, success)                         |
+| End to end        | Playwright (Chromium)              | Journeys across the three portals on the real stack, incl. two browsers racing        |
 
 Integration tests use a separate `advanced_faculty_booking_test` database, never development data.
 Coverage thresholds are enforced by Jest: **100 % statements, functions and lines** (branches ≥ 95 %).
-Only `src/server.ts` (the process entry point) and type-only modules are excluded.
+Only `src/server.ts` (the process entry point) and type-only modules are excluded. Details: `TESTING.md`.
 
 ## 10. Technology decisions
 

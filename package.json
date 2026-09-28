@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/*",
     "services/*",
-    "apps/*"
+    "apps/*",
+    "e2e"
   ],
   "engines": {
     "node": ">=22.12.0",
@@ -14,6 +15,9 @@
   },
   "scripts": {
     "dev:api": "npm run dev --workspace @afb/api",
+    "dev:student": "npm run dev --workspace @afb/student",
+    "dev:faculty": "npm run dev --workspace @afb/faculty",
+    "dev:admin": "npm run dev --workspace @afb/admin",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
@@ -21,9 +25,12 @@
     "format:check": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspace @afb/e2e",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f db",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
     "db:migrate": "npm run db:migrate --workspace @afb/api",
     "db:status": "npm run db:status --workspace @afb/api",
     "db:seed": "npm run db:seed --workspace @afb/api",
@@ -35,6 +42,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",

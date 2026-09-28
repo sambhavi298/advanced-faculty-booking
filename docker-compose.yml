@@ -1,6 +1,21 @@
-# Development infrastructure. Phase 10 extends this file with the API and the three portals
-# so the whole system starts with a single `docker compose up --build`.
+# The whole system with one command:
+#
+#   docker compose up --build
+#
+#   Student portal  http://localhost:8081
+#   Faculty portal  http://localhost:8082
+#   Admin portal    http://localhost:8083
+#   API             http://localhost:4000/api/health/ready
+#
+# For development only PostgreSQL is needed (`npm run db:up` starts just the `db` service).
+# Settings come from a `.env` file next to this one (see .env.example); every value has a default.
 name: advanced-faculty-booking
+
+x-portal: &portal
+  restart: unless-stopped
+  depends_on:
+    api:
+      condition: service_healthy
 
 services:
   db:
@@ -24,6 +39,63 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: afb-api
+    container_name: afb-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-afb}:${POSTGRES_PASSWORD:-afb}@db:5432/${POSTGRES_DB:-advanced_faculty_booking}
+      # Empty = a random secret is generated at start-up (sessions end when the container restarts).
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      CORS_ORIGINS: http://localhost:8081,http://localhost:8082,http://localhost:8083
+      # Requests arrive through the portals' nginx, which sets X-Forwarded-For.
+      TRUST_PROXY: 'true'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      BCRYPT_COST: ${BCRYPT_COST:-12}
+    ports:
+      - '${API_PORT:-4000}:4000'
+
+  student:
+    <<: *portal
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args: { APP: student }
+    image: afb-student
+    container_name: afb-student
+    ports:
+      - '${STUDENT_PORT:-8081}:80'
+
+  faculty:
+    <<: *portal
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args: { APP: faculty }
+    image: afb-faculty
+    container_name: afb-faculty
+    ports:
+      - '${FACULTY_PORT:-8082}:80'
+
+  admin:
+    <<: *portal
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args: { APP: admin }
+    image: afb-admin
+    container_name: afb-admin
+    ports:
+      - '${ADMIN_PORT:-8083}:80'
 
 volumes:
   pgdata:

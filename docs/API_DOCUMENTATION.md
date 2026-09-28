@@ -313,6 +313,53 @@ past, exceptions, the faculty member's teaching and held slots, and (for a stude
 other appointments. Errors: `400 VALIDATION_ERROR` (bad dates, range over 31 days, end before start),
 `404 NOT_FOUND`.
 
+### `GET /faculty/dashboard` (faculty)
+
+The faculty home screen in one round trip; eight independent queries run in parallel on the pool.
+
+| Field      | Source                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| `faculty`  | users → faculty → departments                                                                           |
+| `counts`   | `count(*) FILTER (WHERE status = …)` per status, plus `total`                                           |
+| `today`    | APPROVED/COMPLETED appointments whose slot is on today's campus date (`AT TIME ZONE campus_timezone()`) |
+| `pending`  | requests waiting for a decision, soonest slot first (5)                                                 |
+| `upcoming` | APPROVED appointments after today (5)                                                                   |
+| `stats`    | see below                                                                                               |
+| `recent`   | latest changes, by `greatest(created_at, decided_at, cancelled_at, completed_at)` (5)                   |
+
+`stats.responded`, `stats.approvalRatePct` and `stats.medianResponseMinutes` come from one aggregate over the
+faculty member's decisions made **before the slot started** (requests expired by the sweeper are not
+responses). The median uses the ordered-set aggregate
+`percentile_cont(0.5) WITHIN GROUP (ORDER BY decided_at - created_at)`. `stats.weekly` is the last 8 Monday-based
+campus weeks: `generate_series` produces every week and a `LEFT JOIN` to `appointments` keeps empty weeks as
+zeros, so the chart never has gaps.
+
+```json
+{
+  "faculty": {
+    "name": "Prof. K. Rao",
+    "employeeId": "FAC200",
+    "designation": "Associate Professor",
+    "departmentName": "Computer Science and Engineering",
+    "officeLocation": "…",
+    "slotMinutes": 15
+  },
+  "counts": { "PENDING": 1, "APPROVED": 2, "COMPLETED": 0, "CANCELLED": 0, "REJECTED": 1, "total": 4 },
+  "today": [{ "id": "…", "status": "APPROVED", "startsAt": "…" }],
+  "pending": [{ "id": "…", "status": "PENDING" }],
+  "upcoming": [],
+  "stats": {
+    "responded": 3,
+    "approvalRatePct": 66.7,
+    "medianResponseMinutes": 4.5,
+    "weekly": [{ "weekStart": "2026-08-10", "requests": 0, "accepted": 0 }]
+  },
+  "recent": [{ "id": "…" }]
+}
+```
+
+`403 FORBIDDEN` for student and admin tokens.
+
 ### `GET /faculty/availability` (faculty — own settings)
 
 ```json
@@ -360,6 +407,150 @@ each student; `releasedAppointments` says how many. Errors: `400 VALIDATION_ERRO
 ### `DELETE /faculty/availability/exceptions/:id` (faculty)
 
 `204 No Content`. `404` if it does not exist or belongs to someone else. Appointments it released stay released.
+
+---
+
+## Student dashboard and notifications
+
+### `GET /student/dashboard` (student)
+
+Everything the student home page needs in one round trip. Four independent queries run in parallel on the
+pool: profile (user → student → batch → department), per-status counts (`count(*) FILTER (WHERE status = …)`),
+the next approved appointment that has not ended (`ends_at > app_now()`, index on `(student_id, starts_at)`),
+and the five most recently changed appointments (ordered by
+`greatest(created_at, decided_at, cancelled_at, completed_at)`).
+
+```json
+{
+  "student": {
+    "name": "Priya Sharma",
+    "registrationNumber": "RA221100301001",
+    "batchName": "Batch 1",
+    "departmentName": "Computer Science and Engineering"
+  },
+  "counts": { "PENDING": 1, "APPROVED": 1, "COMPLETED": 0, "CANCELLED": 0, "REJECTED": 0, "total": 2 },
+  "upcoming": { "id": "…", "status": "APPROVED", "startsAt": "…", "faculty": { "officeLocation": "…" } },
+  "recent": [{ "id": "…", "status": "PENDING" }]
+}
+```
+
+`403 FORBIDDEN` for faculty and admin tokens.
+
+### `GET /notifications?limit=20` (any role)
+
+The caller's latest notifications (newest first, `limit` 1–50, default 20) and the unread total. Notifications
+are written by the database itself — an `AFTER INSERT/UPDATE` trigger on `appointments` inserts one for the
+other party whenever a request is created, approved, rejected, cancelled or released by leave — so the API
+never forgets to notify anyone. The unread total comes from a window function over the same scan:
+`count(*) FILTER (WHERE read_at IS NULL) OVER ()`.
+
+```json
+{
+  "unread": 1,
+  "notifications": [
+    {
+      "id": "…",
+      "kind": "APPOINTMENT_APPROVED",
+      "title": "Appointment approved",
+      "body": "Prof. K. Rao approved your appointment on Mon 07 Jan 2030, 10:40 AM.",
+      "appointmentId": "…",
+      "readAt": null,
+      "createdAt": "…"
+    }
+  ]
+}
+```
+
+### `POST /notifications/read` (any role)
+
+Marks every unread notification of the caller as read: `{ "marked": 3, "unread": 0 }`.
+
+---
+
+## Admin (all routes: `ADMIN` role, otherwise `403 FORBIDDEN`)
+
+Every admin figure is computed from the live tables — no counters are stored, so nothing can drift.
+
+### `GET /admin/dashboard`
+
+Six independent queries run in parallel:
+
+| Field                  | SQL technique                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| `totals`               | scalar sub-queries in one `SELECT` (students, faculty, departments, batches, active users, appointments) |
+| `appointmentsByStatus` | one scan with `count(*) FILTER (WHERE status = …)` per status                                            |
+| `today`                | meetings on today's campus date, requests created today (`AT TIME ZONE campus_timezone()`)               |
+| `daily`                | `generate_series` over the last 14 days `LEFT JOIN appointments` — quiet days are zero rows              |
+| `topFaculty`           | CTE + `GROUP BY` + `DENSE_RANK() OVER (ORDER BY requests DESC)`, approval rate with `nullif`             |
+| `recentAudit`          | latest 8 audit entries (same query as `/admin/audit`)                                                    |
+
+### `GET /admin/students?search=&batchId=` · `GET /admin/faculty?search=`
+
+People with their appointment totals (`total`, `pending`, `upcoming`) computed by conditional aggregation in
+the same pass as the join. `GROUP BY u.id, b.id, d.id` lets the query select every column of those rows because
+they are functionally dependent on the primary keys. Search matches the name (trigram index), the login ID
+prefix and, for faculty, the department code.
+
+### `GET /admin/departments`
+
+Each department with its number of faculty, batches, students and appointments (correlated sub-queries).
+
+### `PATCH /admin/users/:id/status` — body `{ "isActive": false }`
+
+Activates or deactivates an account. The update runs in a transaction with the admin as the audit actor, so
+`audit_logs` records who did it (`changed_fields: ["is_active"]`). It takes effect immediately: the
+authentication middleware re-reads `is_active` on every request, so the user's existing token is refused with
+`401` and a new login gets `403 ACCOUNT_DISABLED`. Errors: `404` unknown user, `409 CONFLICT` for deactivating
+your own account, `400` for a malformed body.
+
+```json
+{ "id": 1, "loginId": "RA221100301001", "name": "Priya Sharma", "role": "STUDENT", "isActive": false }
+```
+
+### `GET /admin/appointments?status=&facultyId=&search=&from=&to=&limit=25&offset=0`
+
+Filtered monitoring list from the `appointment_details` view, latest slot first. `total` is the number of
+matching rows, computed by the window function `count(*) OVER ()` in the same scan as the page itself (it is
+`0` when `offset` is past the end). `from`/`to` are campus dates; `from` after `to` is a `400`.
+
+```json
+{ "appointments": [{ "id": "…", "status": "REJECTED" }], "total": 45, "limit": 25, "offset": 0 }
+```
+
+### `GET /admin/audit?table=&action=&actorId=&recordId=&before=&limit=50`
+
+The append-only audit trail, newest first, with the actor's name joined in (`actor: null` means the change
+was made outside the API: migrations, seed, the elapsed-appointment sweep). Password hashes are never stored
+in the trail. Paging is **keyset** pagination on the identity column: pass `nextBefore` as `before` to get the
+next older page (`WHERE id < $before ORDER BY id DESC LIMIT n+1`) — it stays fast at any depth, unlike
+`OFFSET`, and new entries arriving meanwhile cannot shift the pages.
+
+```json
+{
+  "entries": [
+    {
+      "id": 76,
+      "occurredAt": "…",
+      "transactionId": "13909",
+      "actor": { "id": 4, "name": "Amy", "loginId": "ADMIN001", "role": "ADMIN" },
+      "tableName": "users",
+      "recordId": "1",
+      "action": "UPDATE",
+      "changedFields": ["is_active"],
+      "oldData": { "is_active": true, "…": "…" },
+      "newData": { "is_active": false, "…": "…" }
+    }
+  ],
+  "nextBefore": 76
+}
+```
+
+### `GET /admin/reports?month=YYYY-MM` · `POST /admin/reports/refresh`
+
+Rows of the `faculty_monthly_report` materialized view (monthly totals per faculty member with
+`RANK()` within the department, `LAG()` change from the previous month and a running `SUM()`), plus
+`refreshedAt`. `POST …/refresh` runs `refresh_reports()` = `REFRESH MATERIALIZED VIEW CONCURRENTLY`, which
+rebuilds the view without blocking readers, and returns `{ "refreshedAt": "…" }`.
 
 ---
 

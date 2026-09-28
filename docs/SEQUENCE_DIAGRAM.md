@@ -1,7 +1,6 @@
 # Sequence Diagrams
 
-Each diagram shows a real flow through the code, from the portal to PostgreSQL. More flows are added as the
-phases that implement them are completed.
+Each diagram shows a real flow through the code, from the portal to PostgreSQL.
 
 ## 1. Login
 

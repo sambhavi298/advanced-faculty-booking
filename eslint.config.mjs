@@ -3,11 +3,18 @@
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+    ],
   },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -30,9 +37,14 @@ export default defineConfig(
     },
   },
   {
+    // React: rules of hooks and effect dependencies for every component and hook.
+    files: ['**/*.tsx', 'packages/ui/src/hooks/**/*.ts'],
+    ...reactHooks.configs.flat.recommended,
+  },
+  {
     // Tests assert on untyped runtime JSON (e.g. Supertest's `res.body: any`) and use Jest mocks,
     // so the "unsafe any" family and unbound-method checks are relaxed here only — never in src/.
-    files: ['**/test/**/*.ts', '**/*.test.ts', '**/*.test.tsx'],
+    files: ['**/test/**/*.ts', '**/*.test.ts', '**/*.test.tsx', 'e2e/**/*.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/unbound-method': 'off',

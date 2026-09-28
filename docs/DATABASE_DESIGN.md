@@ -261,7 +261,107 @@ make the constraints fast.
 | `audit_logs_actor_idx`                               | B-tree, partial (`actor_user_id IS NOT NULL`)           | "what did this user do"                                                           |
 | `students_batch_id_idx`, `faculty_department_id_idx` | B-tree                                                  | foreign-key joins and `ON DELETE` checks                                          |
 
-Query plans with `EXPLAIN ANALYZE` on realistic data volumes are documented in Phase 10.
+### 8.1 Query performance (EXPLAIN ANALYZE)
+
+The plans below are real output from PostgreSQL 18.4 on a scratch database loaded with
+`database/benchmarks/load-history.sql`: **20,004 users, 60,000 appointments (≈2 years of history for two
+faculty members) and 100,061 audit rows**. All statements are in `database/benchmarks/explain.sql`; timings are
+warm-cache, single run.
+
+| #   | Query (where the app uses it)                                            | Plan                                                                | Buffers | Time     |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- | ------: | -------- |
+| 1   | "Is the faculty member free?" — active overlaps in the next 14 days      | Index Scan on a **partial GiST** exclusion index (active rows only) |      46 | 0.42 ms  |
+| 2   | `faculty_free_slots()` for 14 days → 78 free slots (booking page)        | Function Scan (CTE + `LATERAL generate_series` inside)              |   1,548 | 6.8 ms   |
+| 3   | Latest 20 of 21,000 completed appointments (faculty history)             | **Index Scan Backward** on `appointments_faculty_status_start_idx`  |       8 | 0.07 ms  |
+| 4   | A student's latest requests (student dashboard)                          | Bitmap Index Scan on `appointments_student_recent_idx`              |       8 | 0.05 ms  |
+| 5a  | `full_name ILIKE '%Gupta 29419%'` — 1 of 20,004 users (admin search)     | Bitmap Index Scan on the **trigram GIN** index                      |      25 | 0.25 ms  |
+| 5b  | `full_name ILIKE '%nair%'` — 2,000 matches                               | Bitmap Index Scan on the trigram GIN index                          |     414 | 2.8 ms   |
+| 6a  | Audit log page 3,462 with `OFFSET 90000`                                 | Index Only Scan Backward that reads and discards 90,026 entries     |     249 | 13–30 ms |
+| 6b  | The same page with **keyset** pagination (`WHERE id < $cursor`)          | Index Only Scan Backward that reads 26 entries                      |       6 | 0.02 ms  |
+| 7a  | Monthly per-faculty statistics computed live (`GROUP BY` + `RANK`/`LAG`) | Seq Scan (60,000 rows) → HashAggregate → Sort → 2 × WindowAgg       |   1,244 | 51–57 ms |
+| 7b  | The same statistics from the **materialized view** (Reports page)        | Seq Scan of 52 stored rows                                          |       1 | 0.05 ms  |
+
+**What the plans show**
+
+- **Partial indexes keep hot paths independent of history (1).** The exclusion constraints are `WHERE status IN
+('PENDING','APPROVED')`, so their GiST indexes contain only active appointments. The availability check never
+  touches the 60,000 finished rows and stays sub-millisecond however long the history grows. (Either of the two
+  partial indexes can answer it; the planner picked the smaller-cost one.)
+
+  ```text
+  Index Scan using appointments_student_no_overlap on appointments (actual time=0.380..0.381 rows=0)
+    Index Cond: (slot && tstzrange(now(), (now() + '14 days'::interval)))
+    Filter: (faculty_id = (InitPlan 1).col1)
+    Buffers: shared hit=46
+  Execution Time: 0.418 ms
+  ```
+
+- **A composite expression index serves both the filter and the ORDER BY (3).** `(faculty_id, status,
+lower(slot))`: equality on the first two columns, and `ORDER BY lower(slot) DESC LIMIT 20` is satisfied by
+  walking the third column backwards — no sort node, and the scan stops after 20 rows of 21,000.
+
+  ```text
+  Limit (actual time=0.043..0.052 rows=20)
+    ->  Index Scan Backward using appointments_faculty_status_start_idx on appointments
+          Index Cond: ((faculty_id = (InitPlan 1).col1) AND (status = 'COMPLETED'::appointment_status))
+          Buffers: shared hit=8
+  Execution Time: 0.062 ms
+  ```
+
+- **Trigram GIN makes `'%…%'` searches indexable (5).** A B-tree cannot help with a leading wildcard. The
+  planner still decides per query from its statistics: for a pattern that matched most rows it would choose a
+  sequential scan (without the index the 20,004-row scan takes ≈18 ms).
+
+- **Keyset pagination beats OFFSET by three orders of magnitude on deep pages (6a vs 6b).** `OFFSET 90000`
+  must produce and throw away 90,000 index entries (and, on a cold visibility map, visit their heap pages:
+  5,988 buffers on the first run); the keyset query starts at the cursor. This is why
+  `GET /api/admin/audit` returns `nextBefore` instead of accepting a page number.
+
+  ```text
+  -- 6a  OFFSET
+  Limit (actual time=30.310..30.317 rows=26)
+    ->  Index Only Scan Backward using audit_logs_pkey on audit_logs (actual rows=90026)
+          Buffers: shared hit=5988
+  Execution Time: 30.328 ms
+  -- 6b  keyset
+  Limit (actual time=0.020..0.027 rows=26)
+    ->  Index Only Scan Backward using audit_logs_pkey on audit_logs (actual rows=26)
+          Index Cond: (id < 10000)
+          Buffers: shared hit=7
+  Execution Time: 0.035 ms
+  ```
+
+- **The materialized view turns a 50 ms aggregation into a 0.05 ms read (7a vs 7b).** The live query must
+  scan every appointment, hash-aggregate and run two window passes; the view stores the 52 result rows and is
+  refreshed on demand with `REFRESH MATERIALIZED VIEW CONCURRENTLY` (readers are not blocked). The live cost
+  grows with history; the read does not.
+
+  ```text
+  -- 7a live
+  WindowAgg (actual time=56.892..56.917 rows=52)
+    ->  Sort -> WindowAgg -> Sort
+          ->  HashAggregate (Group Key: faculty_id, date_trunc('month', …)::date)
+                ->  Seq Scan on appointments (actual rows=60000)   Buffers: shared hit=1238
+  Execution Time: 57.467 ms
+  -- 7b materialized view
+  Sort (actual time=0.038..0.041 rows=52)
+    ->  Seq Scan on faculty_monthly_report (actual rows=52)   Buffers: shared hit=1
+  Execution Time: 0.051 ms
+  ```
+
+- **BRIN stays tiny.** After the load, `audit_logs_occurred_at_brin` is **24 kB** for 100,061 rows, against
+  2.2 MB for the primary-key B-tree. Audit rows arrive in time order, so one min/max summary per block range is
+  enough for time-window filters.
+
+**Reproduce** (never on the database you demo with):
+
+```bash
+docker exec afb-postgres createdb -U afb afb_bench
+# PowerShell: $env:DATABASE_URL="postgres://afb:afb@127.0.0.1:5433/afb_bench"; npm run db:setup
+DATABASE_URL=postgres://afb:afb@127.0.0.1:5433/afb_bench npm run db:setup
+docker exec -i afb-postgres psql -U afb -d afb_bench < database/benchmarks/load-history.sql
+docker exec -i afb-postgres psql -U afb -d afb_bench < database/benchmarks/explain.sql
+```
 
 ## 9. Transactions and isolation
 
@@ -322,3 +422,9 @@ Query plans with `EXPLAIN ANALYZE` on realistic data volumes are documented in P
 | Set-returning function in a `LEFT JOIN` + `json_agg … FILTER` | free slots grouped per day (`FacultyRepository.freeSlotsByDay`)                                 | every date in a range with its slots, in one query          |
 | `LATERAL` join to a function                                  | next free slot per faculty member in the directory                                              | earliest bookable slot for each row without N+1 queries     |
 | Trigram similarity ranking                                    | faculty search (`similarity(full_name, term)`)                                                  | typo-tolerant, index-backed name search                     |
+| Conditional aggregation (`count(*) FILTER (WHERE …)`)         | every dashboard, per-person totals in the admin lists                                           | many counts in one pass instead of one query per status     |
+| `generate_series` + `LEFT JOIN`                               | weekly (faculty) and daily (admin) activity charts                                              | periods without activity appear as zeros, not gaps          |
+| Ordered-set aggregate `percentile_cont`                       | faculty median response time                                                                    | a typical value that one slow outlier cannot distort        |
+| `DENSE_RANK()`, `count(*) OVER ()`                            | admin "faculty by demand"; total matches for the appointment monitor                            | ranking with ties; page + total in one scan                 |
+| Keyset pagination                                             | `GET /api/admin/audit` (`WHERE id < $cursor ORDER BY id DESC`)                                  | constant-time deep pages on an ever-growing log (§ 8.1)     |
+| `GROUP BY` primary key (functional dependency)                | admin student and faculty lists                                                                 | select all columns of the grouped rows without listing them |

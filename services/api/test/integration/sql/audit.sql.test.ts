@@ -123,12 +123,14 @@ describe('Audit logging (triggers)', () => {
 
   it('audits the seed itself: one transaction, attributed to "system"', async () => {
     // Every seed insert shares the seed transaction's id (xid8), so the whole seed is one unit in the log.
+    // COLLATE "C" orders by byte value, so the order is the same whatever the database's default collation
+    // (en_US.UTF-8 ignores '_' and would put 'batches' before 'batch_schedule'; C.UTF-8 does not).
     const result = await pool.query<{ table_name: string; n: number; actors: number }>(
       `SELECT table_name, count(*) AS n, count(actor_user_id) AS actors
          FROM audit_logs
         WHERE transaction_id = (SELECT transaction_id FROM audit_logs
                                  WHERE table_name = 'users' AND action = 'INSERT' AND new_data->>'login_id' = 'ADMIN001')
-        GROUP BY table_name ORDER BY table_name`,
+        GROUP BY table_name ORDER BY table_name COLLATE "C"`,
     );
     expect(result.rows).toEqual([
       { table_name: 'batch_schedule', n: 40, actors: 0 },

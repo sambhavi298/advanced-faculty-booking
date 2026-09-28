@@ -95,6 +95,23 @@ describe('createApiClient', () => {
     expect(onSessionExpired).toHaveBeenCalledWith(expect.objectContaining({ code: 'UNAUTHENTICATED' }));
   });
 
+  it('notifies subscribed listeners of session expiry until they unsubscribe', async () => {
+    const { client, tokenStore } = await setup((_req, res) => {
+      json(res, 401, { error: { code: 'UNAUTHENTICATED', message: 'expired', requestId: 'r' } });
+    });
+    const listener = vi.fn();
+    const unsubscribe = client.onSessionExpired(listener);
+
+    tokenStore.set('t', '2099-01-01T00:00:00.000Z');
+    await client.auth.me().catch(() => undefined);
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    tokenStore.set('t', '2099-01-01T00:00:00.000Z');
+    await client.auth.me().catch(() => undefined);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('passes other errors through unchanged', async () => {
     const { client, tokenStore, onSessionExpired } = await setup((_req, res) => {
       json(res, 403, { error: { code: 'FORBIDDEN', message: 'No.', requestId: 'r' } });

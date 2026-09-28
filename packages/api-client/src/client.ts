@@ -1,20 +1,33 @@
 import type {
+  AdminAppointmentFilter,
+  AdminAppointmentPage,
+  AdminDashboard,
+  AdminDepartment,
+  AdminFaculty,
+  AdminStudent,
   Appointment,
   AppointmentList,
   AppointmentStatus,
   AuthUser,
+  AuditFilter,
+  AuditPage,
   AvailabilityWindow,
   CreateAppointmentRequest,
   CreateExceptionRequest,
   CreateExceptionResponse,
   FacultyAvailability,
+  FacultyDashboard,
   FacultySummary,
   LivenessResponse,
   LoginRequest,
   LoginResponse,
+  MonthlyReport,
   MyAvailability,
+  NotificationList,
   ReadinessResponse,
   ReplaceAvailabilityResponse,
+  StudentDashboard,
+  UserStatusResponse,
 } from '@afb/types';
 import axios, { type AxiosInstance } from 'axios';
 import { type ApiError, toApiError } from './errors';
@@ -42,6 +55,7 @@ export function createApiClient({
   timeoutMs = 15_000,
   onSessionExpired,
 }: ApiClientOptions) {
+  const sessionExpiredListeners = new Set<(error: ApiError) => void>();
   const http: AxiosInstance = axios.create({
     baseURL,
     timeout: timeoutMs,
@@ -62,12 +76,23 @@ export function createApiClient({
     if (error.status === 401 && sentToken) {
       tokenStore.clear();
       onSessionExpired?.(error);
+      for (const listener of sessionExpiredListeners) {
+        listener(error);
+      }
     }
     return Promise.reject(error);
   });
 
   return {
     http,
+
+    /** Subscribe to session expiry (e.g. to show the login page). Returns an unsubscribe function. */
+    onSessionExpired(listener: (error: ApiError) => void): () => void {
+      sessionExpiredListeners.add(listener);
+      return () => {
+        sessionExpiredListeners.delete(listener);
+      };
+    },
 
     auth: {
       /** POST /auth/login — stores the token on success. */
@@ -136,6 +161,10 @@ export function createApiClient({
         return (await http.get<FacultyAvailability>(`/faculty/${String(id)}/availability`, { params: range }))
           .data;
       },
+      /** GET /faculty/dashboard (faculty: today, pending, upcoming, statistics) */
+      async dashboard(): Promise<FacultyDashboard> {
+        return (await http.get<FacultyDashboard>('/faculty/dashboard')).data;
+      },
       /** GET /faculty/availability (faculty: own weekly windows and exceptions) */
       async myAvailability(): Promise<MyAvailability> {
         return (await http.get<MyAvailability>('/faculty/availability')).data;
@@ -151,6 +180,63 @@ export function createApiClient({
       /** DELETE /faculty/availability/exceptions/:id */
       async removeException(id: number): Promise<void> {
         await http.delete(`/faculty/availability/exceptions/${String(id)}`);
+      },
+    },
+
+    student: {
+      /** GET /student/dashboard */
+      async dashboard(): Promise<StudentDashboard> {
+        return (await http.get<StudentDashboard>('/student/dashboard')).data;
+      },
+    },
+
+    admin: {
+      /** GET /admin/dashboard — live totals, activity and top faculty */
+      async dashboard(): Promise<AdminDashboard> {
+        return (await http.get<AdminDashboard>('/admin/dashboard')).data;
+      },
+      /** GET /admin/students */
+      async students(filter: { search?: string; batchId?: number } = {}): Promise<AdminStudent[]> {
+        return (await http.get<AdminStudent[]>('/admin/students', { params: filter })).data;
+      },
+      /** GET /admin/faculty */
+      async faculty(filter: { search?: string } = {}): Promise<AdminFaculty[]> {
+        return (await http.get<AdminFaculty[]>('/admin/faculty', { params: filter })).data;
+      },
+      /** GET /admin/departments */
+      async departments(): Promise<AdminDepartment[]> {
+        return (await http.get<AdminDepartment[]>('/admin/departments')).data;
+      },
+      /** PATCH /admin/users/:id/status — activate or deactivate an account */
+      async setUserStatus(id: number, isActive: boolean): Promise<UserStatusResponse> {
+        return (await http.patch<UserStatusResponse>(`/admin/users/${String(id)}/status`, { isActive })).data;
+      },
+      /** GET /admin/appointments — filtered, paged monitoring list */
+      async appointments(filter: AdminAppointmentFilter = {}): Promise<AdminAppointmentPage> {
+        return (await http.get<AdminAppointmentPage>('/admin/appointments', { params: filter })).data;
+      },
+      /** GET /admin/audit — newest first; pass `nextBefore` as `before` for older entries */
+      async audit(filter: AuditFilter = {}): Promise<AuditPage> {
+        return (await http.get<AuditPage>('/admin/audit', { params: filter })).data;
+      },
+      /** GET /admin/reports — the faculty_monthly_report materialized view */
+      async reports(month?: string): Promise<MonthlyReport> {
+        return (await http.get<MonthlyReport>('/admin/reports', { params: { month } })).data;
+      },
+      /** POST /admin/reports/refresh — REFRESH MATERIALIZED VIEW CONCURRENTLY */
+      async refreshReports(): Promise<{ refreshedAt: string }> {
+        return (await http.post<{ refreshedAt: string }>('/admin/reports/refresh')).data;
+      },
+    },
+
+    notifications: {
+      /** GET /notifications — latest notifications and the unread total */
+      async list(limit = 20): Promise<NotificationList> {
+        return (await http.get<NotificationList>('/notifications', { params: { limit } })).data;
+      },
+      /** POST /notifications/read — mark all as read */
+      async markAllRead(): Promise<void> {
+        await http.post('/notifications/read');
       },
     },
 

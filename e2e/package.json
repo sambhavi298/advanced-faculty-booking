@@ -1,0 +1,16 @@
+{
+  "name": "@afb/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end tests: real browsers against the real API, PostgreSQL and all three portals.",
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@afb/types": "*",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0"
+  }
+}

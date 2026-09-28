@@ -1,0 +1,36 @@
+/*
+ * Shared design tokens for all three portals (Tailwind CSS v4, CSS-first configuration).
+ * Each portal's stylesheet does:  @import "tailwindcss"; @import "@afb/ui/styles.css"; @source "…/packages/ui/src";
+ */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Brand: SRM-inspired deep academic blue. */
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dbe7ff;
+  --color-brand-200: #bdd2fe;
+  --color-brand-300: #90b4fc;
+  --color-brand-400: #5d8df8;
+  --color-brand-500: #3a68f0;
+  --color-brand-600: #254bd6;
+  --color-brand-700: #1f3cad;
+  --color-brand-800: #1f358a;
+  --color-brand-900: #1e316d;
+  --color-brand-950: #151f43;
+
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
