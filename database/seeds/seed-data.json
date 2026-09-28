@@ -1,0 +1,564 @@
+{
+  "$comment": "Initial data for the Faculty Appointment Booking System. Passwords here are the documented demo credentials; the seeder bcrypt-hashes them before anything reaches the database. Seeding runs only on a database with no users.",
+  "departments": [
+    {
+      "code": "CSE",
+      "name": "Computer Science and Engineering"
+    }
+  ],
+  "batches": [
+    {
+      "ref": "CSE-3-B1",
+      "department": "CSE",
+      "name": "Batch 1",
+      "yearOfStudy": 3,
+      "academicYear": "2026-2027"
+    },
+    {
+      "ref": "CSE-3-B2",
+      "department": "CSE",
+      "name": "Batch 2",
+      "yearOfStudy": 3,
+      "academicYear": "2026-2027"
+    }
+  ],
+  "students": [
+    {
+      "loginId": "RA221100301001",
+      "fullName": "Priya Sharma",
+      "password": "Password123!",
+      "batch": "CSE-3-B1"
+    }
+  ],
+  "faculty": [
+    {
+      "loginId": "FAC200",
+      "fullName": "Prof. K. Rao",
+      "password": "Password123!",
+      "department": "CSE",
+      "designation": "Associate Professor",
+      "officeLocation": "Tech Park, 7th Floor, Staff Room 712",
+      "slotMinutes": 15
+    },
+    {
+      "loginId": "FAC201",
+      "fullName": "Prof. S. Iyer",
+      "password": "Password123!",
+      "department": "CSE",
+      "designation": "Assistant Professor",
+      "officeLocation": "Tech Park, 7th Floor, Staff Room 715",
+      "slotMinutes": 20
+    }
+  ],
+  "admins": [
+    {
+      "loginId": "ADMIN001",
+      "fullName": "Amy",
+      "password": "Admin123!"
+    }
+  ],
+  "facultyAvailability": [
+    {
+      "faculty": "FAC200",
+      "dayOfWeek": 1,
+      "start": "10:40",
+      "end": "12:25"
+    },
+    {
+      "faculty": "FAC200",
+      "dayOfWeek": 2,
+      "start": "13:20",
+      "end": "16:00"
+    },
+    {
+      "faculty": "FAC200",
+      "dayOfWeek": 3,
+      "start": "14:15",
+      "end": "16:00"
+    },
+    {
+      "faculty": "FAC200",
+      "dayOfWeek": 4,
+      "start": "10:40",
+      "end": "12:25"
+    },
+    {
+      "faculty": "FAC200",
+      "dayOfWeek": 5,
+      "start": "13:20",
+      "end": "15:05"
+    },
+    {
+      "faculty": "FAC201",
+      "dayOfWeek": 1,
+      "start": "10:40",
+      "end": "12:25"
+    },
+    {
+      "faculty": "FAC201",
+      "dayOfWeek": 2,
+      "start": "10:40",
+      "end": "12:25"
+    },
+    {
+      "faculty": "FAC201",
+      "dayOfWeek": 3,
+      "start": "13:20",
+      "end": "15:05"
+    },
+    {
+      "faculty": "FAC201",
+      "dayOfWeek": 4,
+      "start": "13:20",
+      "end": "16:00"
+    },
+    {
+      "faculty": "FAC201",
+      "dayOfWeek": 5,
+      "start": "13:20",
+      "end": "15:05"
+    }
+  ],
+  "batchSchedule": [
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "08:50",
+      "end": "09:40",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC201",
+      "courseCode": "CS302L",
+      "courseTitle": "Database Laboratory",
+      "sessionType": "LAB",
+      "dayOfWeek": 1,
+      "start": "13:20",
+      "end": "15:05",
+      "room": "TP Database Lab 1"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "08:50",
+      "end": "09:40",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "11:35",
+      "end": "12:25",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "13:20",
+      "end": "14:10",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "08:50",
+      "end": "09:40",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC200",
+      "courseCode": "CS301L",
+      "courseTitle": "Computer Networks Laboratory",
+      "sessionType": "LAB",
+      "dayOfWeek": 4,
+      "start": "14:15",
+      "end": "16:00",
+      "room": "TP Networks Lab 3"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "08:50",
+      "end": "09:40",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B1",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "13:20",
+      "end": "14:10",
+      "room": "TP 401"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 1,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC200",
+      "courseCode": "CS301L",
+      "courseTitle": "Computer Networks Laboratory",
+      "sessionType": "LAB",
+      "dayOfWeek": 1,
+      "start": "14:15",
+      "end": "16:00",
+      "room": "TP Networks Lab 3"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 2,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC201",
+      "courseCode": "CS302L",
+      "courseTitle": "Database Laboratory",
+      "sessionType": "LAB",
+      "dayOfWeek": 2,
+      "start": "13:20",
+      "end": "15:05",
+      "room": "TP Database Lab 1"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "08:50",
+      "end": "09:40",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "11:35",
+      "end": "12:25",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 3,
+      "start": "13:20",
+      "end": "14:10",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "10:40",
+      "end": "11:30",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS305",
+      "courseTitle": "Artificial Intelligence",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 4,
+      "start": "11:35",
+      "end": "12:25",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC201",
+      "courseCode": "CS302",
+      "courseTitle": "Advanced SQL and Modern Database Features",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "08:00",
+      "end": "08:50",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS303",
+      "courseTitle": "Compiler Design",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "09:45",
+      "end": "10:35",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": "FAC200",
+      "courseCode": "CS301",
+      "courseTitle": "Computer Networks",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "13:20",
+      "end": "14:10",
+      "room": "TP 402"
+    },
+    {
+      "batch": "CSE-3-B2",
+      "faculty": null,
+      "courseCode": "CS304",
+      "courseTitle": "Software Engineering",
+      "sessionType": "LECTURE",
+      "dayOfWeek": 5,
+      "start": "14:15",
+      "end": "15:05",
+      "room": "TP 402"
+    }
+  ]
+}

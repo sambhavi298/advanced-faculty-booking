@@ -1,0 +1,43 @@
+{
+  "name": "advanced-faculty-booking",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Faculty Appointment Booking System for SRM IST \u2014 an Advanced SQL & Modern Database Features project built on PostgreSQL 18.",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev:api": "npm run dev --workspace @afb/api",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:migrate": "npm run db:migrate --workspace @afb/api",
+    "db:status": "npm run db:status --workspace @afb/api",
+    "db:seed": "npm run db:seed --workspace @afb/api",
+    "db:setup": "npm run db:setup --workspace @afb/api",
+    "db:fresh": "npm run db:fresh --workspace @afb/api",
+    "db:reset": "npm run db:reset --workspace @afb/api",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

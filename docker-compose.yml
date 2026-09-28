@@ -1,0 +1,29 @@
+# Development infrastructure. Phase 10 extends this file with the API and the three portals
+# so the whole system starts with a single `docker compose up --build`.
+name: advanced-faculty-booking
+
+services:
+  db:
+    image: postgres:18
+    container_name: afb-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-afb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-afb}
+      POSTGRES_DB: ${POSTGRES_DB:-advanced_faculty_booking}
+    ports:
+      # Host port 5433 so this never collides with a locally installed PostgreSQL on 5432.
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/18/docker, so the volume is
+      # mounted one level up (mounting /var/lib/postgresql/data is the pre-18 convention).
+      - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
