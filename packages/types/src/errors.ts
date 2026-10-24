@@ -37,6 +37,7 @@ export type ErrorCode =
   | 'INVALID_STATUS_TRANSITION'
   | 'APPOINTMENT_IMMUTABLE'
   | 'PERIOD_ALREADY_ENDED'
+  | 'BOOKING_LIMIT_REACHED'
   // Concurrency (raised by PostgreSQL under contention)
   | 'TRANSACTION_CONFLICT'
   | 'RESOURCE_BUSY'

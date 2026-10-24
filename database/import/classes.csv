@@ -1,0 +1,13 @@
+department_code,academic_year,year_of_study,batch_name,course_code,course_title,session_type,day_of_week,start_time,end_time,room,faculty_login_id
+CSE,2026-2027,3,Batch 3,CS302,Advanced SQL and Modern Database Features,LECTURE,1,08:00,08:50,TP 403,
+CSE,2026-2027,3,Batch 3,CS304,Software Engineering,LECTURE,1,08:50,09:40,TP 403,FAC202
+CSE,2026-2027,3,Batch 3,CS305,Artificial Intelligence,LECTURE,1,09:45,10:35,TP 403,
+CSE,2026-2027,3,Batch 3,CS301,Computer Networks,LECTURE,2,08:00,08:50,TP 403,
+CSE,2026-2027,3,Batch 3,CS303,Compiler Design,LECTURE,2,08:50,09:40,TP 403,FAC203
+CSE,2026-2027,3,Batch 3,CS302L,Database Laboratory,LAB,2,13:20,15:05,TP Database Lab 2,
+CSE,2026-2027,3,Batch 3,CS304,Software Engineering,LECTURE,3,08:50,09:40,TP 403,FAC202
+CSE,2026-2027,3,Batch 3,CS303,Compiler Design,LECTURE,3,10:40,11:30,TP 403,FAC203
+CSE,2026-2027,3,Batch 3,CS305,Artificial Intelligence,LECTURE,4,08:50,09:40,TP 403,
+CSE,2026-2027,3,Batch 3,CS301L,Computer Networks Laboratory,LAB,4,14:15,16:00,TP Networks Lab 2,
+CSE,2026-2027,3,Batch 3,CS302,Advanced SQL and Modern Database Features,LECTURE,5,08:00,08:50,TP 403,
+CSE,2026-2027,3,Batch 3,CS303,Compiler Design,LECTURE,5,08:50,09:40,TP 403,FAC203

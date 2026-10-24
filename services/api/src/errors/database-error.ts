@@ -85,6 +85,7 @@ const BUSINESS_RULE_ERRORS: Record<string, ErrorSpec> = {
   AB006: { status: 409, code: 'APPOINTMENT_IMMUTABLE' },
   AB007: { status: 400, code: 'SLOT_BEYOND_HORIZON' },
   AB008: { status: 400, code: 'PERIOD_ALREADY_ENDED' },
+  AB009: { status: 409, code: 'BOOKING_LIMIT_REACHED' },
 };
 
 function databaseUnavailable(): AppError {
